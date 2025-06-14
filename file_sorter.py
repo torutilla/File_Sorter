@@ -12,7 +12,12 @@ file_extensions = {
     "Images": [".png", ".jpg"],
     "Videos": [".mp4", ".mov"],
     "Documents": [".docx", ".pdf", ".xslx"],
+    "Others": [".zip", ".exe"]
 }
+
+def change_folder_name():
+    pass
+
 def select_destination():
     global dir 
     global items
@@ -22,16 +27,19 @@ def select_destination():
     items= os.listdir(dir)
 
 def sort_files():
-
     for ext in file_extensions.keys():
         os.makedirs(os.path.join(dir, ext), exist_ok=True)
-        print("sorted")
-    # for item in items:
-    #     name, ext = os.path.splitext(item)
-        
-
-        
-
+    
+    for item in items:
+        if os.path.isfile(os.path.join(dir, item)):
+            name, ext = os.path.splitext(item)
+            for directory, extension in file_extensions.items():
+                if ext in extension:
+                    shutil.move(src=os.path.join(dir, item), dst=os.path.join(dir, directory))
+                    break
+            else:
+                shutil.move(src=os.path.join(dir, item), dst=os.path.join(dir, "Others"))
+    
 root = Tk()
 root.title("File Sorter")
 root.geometry("800x600")
@@ -40,10 +48,13 @@ selector_label = Label(root, text="Select a destination")
 
 select_button = Button(root, text="Select", width=25, command=select_destination)
 sort_button = Button(root, text="Sort", command=sort_files)
-sort_button.grid(row=1, column=1)
 selected_dir = Label(root, text=dir)
-selector_label.grid(row=0, column=0)
-select_button.grid(row=0, column=1)
-selected_dir.grid(row=1, column=0)
+selector_label.pack()
+sort_button.pack()
+selected_dir.pack()
+select_button.pack()
+for i in file_extensions.keys():
+    curr_label = Label(root, text=i)
+    curr_label.pack()
 root.mainloop()
 
