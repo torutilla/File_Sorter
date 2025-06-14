@@ -2,18 +2,42 @@ import os
 import shutil
 import datetime
 import logging
-
+from watchdog.observers import Observer
+from event_handler_subclass import Handler
 from tkinter import *
 from tkinter import filedialog
+import json
 
 dir = "/"
 items = list()
+event_handler = None
 file_extensions = {
     "Images": [".png", ".jpg"],
     "Videos": [".mp4", ".mov"],
     "Documents": [".docx", ".pdf", ".xslx"],
     "Others": [".zip", ".exe"]
 }
+
+def save_config():
+    pass
+
+def start_observer():
+    global event_handler
+    event_handler = Handler()
+    observer = Observer()
+    observer.schedule(event_handler=event_handler, path=dir)
+    observer.start()
+    try: 
+        while observer.is_alive():
+            observer.join(1)
+    finally:
+        observer.stop()
+        observer.join()
+
+    
+
+def load_json_config():
+    pass
 
 def change_folder_name():
     pass
@@ -27,6 +51,8 @@ def select_destination():
     items= os.listdir(dir)
 
 def sort_files():
+    if dir == "/":
+        return
     for ext in file_extensions.keys():
         os.makedirs(os.path.join(dir, ext), exist_ok=True)
     
@@ -39,7 +65,7 @@ def sort_files():
                     break
             else:
                 shutil.move(src=os.path.join(dir, item), dst=os.path.join(dir, "Others"))
-    
+
 root = Tk()
 root.title("File Sorter")
 root.geometry("800x600")
