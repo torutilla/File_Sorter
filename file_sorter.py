@@ -2,9 +2,16 @@ import os
 import shutil
 import datetime
 import logging
-
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 from tkinter import *
 from tkinter import filedialog
+import json
+
+class Handler(FileSystemEventHandler):
+    def on_moved(self, event):
+        return super().on_moved(event)
+    
 
 dir = "/"
 items = list()
@@ -14,6 +21,18 @@ file_extensions = {
     "Documents": [".docx", ".pdf", ".xslx"],
     "Others": [".zip", ".exe"]
 }
+
+def start_observer():
+    event_handler = Handler()
+    observer = Observer()
+    observer.schedule(event_handler=event_handler, path=dir)
+    observer.start()
+
+def load_json():
+    pass
+
+def save_config():
+    pass
 
 def change_folder_name():
     pass
@@ -27,6 +46,8 @@ def select_destination():
     items= os.listdir(dir)
 
 def sort_files():
+    if dir == "/":
+        return
     for ext in file_extensions.keys():
         os.makedirs(os.path.join(dir, ext), exist_ok=True)
     
