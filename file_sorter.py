@@ -9,8 +9,8 @@ from tkinter import filedialog
 import json
 
 class Handler(FileSystemEventHandler):
-    def on_moved(self, event):
-        return super().on_moved(event)
+    def on_created(self, event):
+        return super().on_created(event)
     
 
 dir = "/"
@@ -29,10 +29,22 @@ def start_observer():
     observer.start()
 
 def load_json():
-    pass
+    try:
+        with open('config.json') as file:
+            global file_extensions
+            file_extensions = json.load(file)
+            print(f"json {file_extensions}")
+    except:
+        print("no json file")
 
 def save_config():
-    pass
+    try:
+        with open('config.json', 'a') as file:
+            json.dump(file_extensions, file)
+    except FileExistsError:
+        with open('config.json', 'w') as file:
+            json.dump(file_extensions, file)
+
 
 def change_folder_name():
     pass
@@ -61,6 +73,7 @@ def sort_files():
             else:
                 shutil.move(src=os.path.join(dir, item), dst=os.path.join(dir, "Others"))
     
+load_json()
 root = Tk()
 root.title("File Sorter")
 root.geometry("800x600")
