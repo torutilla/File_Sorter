@@ -11,7 +11,7 @@ from tkinter import filedialog
 import json
 
 class Handler(FileSystemEventHandler):
-    def on_created(self, event):
+    def on_moved(self, event):
         sort_files()
         return super().on_created(event)
     
@@ -70,21 +70,26 @@ def sort_files():
         os.makedirs(os.path.join(watch_dir, ext), exist_ok=True)
     
     for item in os.listdir(watch_dir):
-        if os.path.isfile(os.path.join(watch_dir, item)):
-            name, ext = os.path.splitext(item)
-            for directory, extension in file_extensions.items():
-                source = os.path.join(watch_dir, item)
+        source = os.path.join(watch_dir, item)
+
+        if not os.path.isfile(source):
+            continue
+
+        _, ext = os.path.splitext(item)
+        for directory, extension in file_extensions.items():
+            
+            if ext in extension:
                 destination = os.path.join(watch_dir, directory)
-                if os.path.exists(os.path.join(destination, item)):
+                src_path = os.path.join(destination, item)
+                if os.path.exists(src_path):
                     item_renamed = rename_file(destination, item)
-                    os.rename(source, os.path.join(watch_dir, item_renamed))
-                    shutil.move(src=os.path.join(watch_dir, item_renamed), dst=destination)
-                    break
-                if ext in extension:
-                    shutil.move(src=source, dst=destination)
-                    break
-            else:
-                shutil.move(src=os.path.join(watch_dir, item), dst=os.path.join(watch_dir, "Others"))
+                    src_path = os.path.join(watch_dir, item_renamed)
+                    os.rename(source, src_path)
+                    
+                shutil.move(src=src_path, dst=destination)
+                break
+        else:
+            shutil.move(src=os.path.join(watch_dir, item), dst=os.path.join(watch_dir, "Others"))
 
 def rename_file(path:str, item:str):
     file, extension = os.path.splitext(item)
@@ -128,6 +133,6 @@ def gui():
     root.mainloop()
 
 load_json()
-# gui()
+gui()
 start_observer()
 
