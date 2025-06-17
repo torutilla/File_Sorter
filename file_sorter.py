@@ -9,29 +9,45 @@ from watchdog.events import FileSystemEventHandler
 from tkinter import *
 from tkinter import filedialog
 import json
+import time
 
-class Handler(FileSystemEventHandler):
+class FileMovedHandler(FileSystemEventHandler):
+    TEMP_EXTENSIONS = (".crdownload", ".part", ".tmp", ".download", ".opdownload", ".filepart", ".temp")
+    debounce_time = 1
+
+    def is_temp_file(self, filepath):
+        _, ext = os.path.splitext(filepath)
+        return ext.lower() in self.TEMP_EXTENSIONS or os.path.basename(filepath).startswith("~$")
+
     def on_moved(self, event):
-        sort_files()
-        return super().on_created(event)
+        if event.is_directory:    
+            return
+        print('hotdog')
+        # print(f"destination path: {event.dest_path}")
+        time.sleep(self.debounce_time)
+        if not self.is_temp_file(event.dest_path):
+        #need to add debounce
+            sort_files()
+        return super().on_moved(event)
     
 
-watch_dir = "C:/Users/ADMIN/Downloads"
+watch_dir = "C:\\Users\\ADMIN\\Downloads"
 selected_dir = None
-
+observer = None
 file_extensions = {
     "Images": [".png", ".jpg"],
     "Videos": [".mp4", ".mov"],
     "Documents": [".docx", ".pdf", ".xslx"],
-    "Others": [".zip", ".exe"]
+    "Fonts": [".ttf", ".otf"],
+    "Others": [".zip", ".exe"],
 }
 
 def start_observer():
-    event_handler = Handler()
-    observer = Observer()
+    global observer
+    event_handler = FileMovedHandler()
     observer.schedule(event_handler=event_handler, path=watch_dir)
     observer.start() 
-    
+    print("Observer Started")
     observer.join()
 
 def load_json():
@@ -39,13 +55,13 @@ def load_json():
         with open('config.json') as file:
             global file_extensions
             file_extensions = json.load(file)
-            print(f"json {file_extensions}")
+            # print(f"json {file_extensions}")
     except:
         print("no json file")
 
 def save_config():
     try:
-        with open('config.json', 'a') as file:
+        with open('config.json', 'x') as file:
             json.dump(file_extensions, file)
     except FileExistsError:
         with open('config.json', 'w') as file:
@@ -79,14 +95,15 @@ def sort_files():
         for directory, extension in file_extensions.items():
             
             if ext in extension:
-                destination = os.path.join(watch_dir, directory)
-                src_path = os.path.join(destination, item)
-                if os.path.exists(src_path):
-                    item_renamed = rename_file(destination, item)
-                    src_path = os.path.join(watch_dir, item_renamed)
-                    os.rename(source, src_path)
-                    
-                shutil.move(src=src_path, dst=destination)
+                destination_dir = os.path.join(watch_dir, directory)
+                existing_src = os.path.join(destination_dir, item)
+                if os.path.exists(existing_src):
+                    item_renamed = rename_file(destination_dir, item)
+                    prev = source
+                    source = os.path.join(watch_dir, item_renamed)
+                    os.rename(prev, source)
+                  
+                shutil.move(src=source, dst=destination_dir)
                 break
         else:
             shutil.move(src=os.path.join(watch_dir, item), dst=os.path.join(watch_dir, "Others"))
@@ -103,36 +120,41 @@ def rename_file(path:str, item:str):
         if pat[1] == n:
             count += 1
     
-    file = f"{n} ({count}){extension}"
+    file = f"{n}({count}){extension}"
     return file
+def close_window():
+    print("closed")
+    observer.stop()
+    root.destroy()
 
-
-def gui():
-    global selected_dir
-    root = Tk()
-    root.title("File Sorter")
-    root.geometry("800x600")
-    root.resizable(False, False)
-    menu = Menu(root)
-    root.config(menu=menu)
-    filemenu = Menu(menu)
-    menu.add_cascade(label="File", menu=filemenu)
-    filemenu.add_command(label='Save', command=save_config)
-
-    selector_label = Label(root, text="Select a destination")
-    select_button = Button(root, text="Select", width=25, command=select_destination)
-    sort_button = Button(root, text="Sort", command=sort_files)
-    selected_dir = Label(root, text=watch_dir)
-    selector_label.pack()
-    selected_dir.pack()
-    select_button.pack()
-    for i in file_extensions.keys():
-        curr_label = Label(root, text=i)
-        curr_label.pack()
-    sort_button.pack()
-    root.mainloop()
 
 load_json()
-gui()
+
+observer = Observer()
+# root = Tk()
+# root.title("File Sorter")
+# root.geometry("800x600")
+# root.resizable(False, False)
+# menu = Menu(root)
+# root.config(menu=menu)
+# filemenu = Menu(menu)
+# menu.add_cascade(label="File", menu=filemenu)
+# filemenu.add_command(label='Save', command=save_config)
+# root.protocol("WM_DELETE_WINDOW", close_window)
+# selector_label = Label(root, text="Select a destination")
+# select_button = Button(root, text="Select", width=25, command=select_destination)
+# sort_button = Button(root, text="Sort", command=sort_files)
+# selected_dir = Label(root, text=watch_dir)
+# selector_label.pack()
+# selected_dir.pack()
+# select_button.pack()
+# for i in file_extensions.keys():
+#     curr_label = Label(root, text=i)
+#     curr_label.pack()
+# sort_button.pack()
+
+
+# root.mainloop()
+
 start_observer()
 
